@@ -1,0 +1,41 @@
+//1.表单校验
+$(function(){
+	if($("#editForm").size()>0){
+		$("#editForm").validate({
+			rules:{
+				"employee.name":{
+					required:true,
+					rangelength:[2,8]
+				},"employee.password":{
+					required:true,
+					minlength:4
+				},"repassword":{
+					equalTo:"#password"
+				},"employee.age":{
+					required:true,
+					range:[16,80]
+				},"employee.email":{
+					email:true
+				}
+			},
+			messages:{
+				"employee.name":{
+					required:"用户名必填！",
+					rangelength:"用户名必须在{0}到{1}位之间！"
+				},"employee.password":{
+					required:"密码必填！",
+					minlength:"密码长度不少于4位！"
+				},"repassword":{
+					equalTo:"两次密码不相等！"
+				},"employee.age":{
+					required:"年龄必填！",
+					range:"年龄必须在{0}到{1}之间！"
+				},"employee.email":{
+					email:"请填写正确的邮件格式！"
+				}
+			}
+		});
+	}
+	
+});
+

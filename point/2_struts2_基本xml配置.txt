@@ -1,0 +1,20 @@
+1):struts.xml中：
+		<struts>
+			<!-- 开发者模式，改变xml，不必重启tomcat，改变action结构需要重启tomcat -->
+		    <constant name="struts.devMode" value="true" />
+		    <!-- 所有表单中使用了<s:textarea/textfield/>风格都为简单 -->
+		     <constant name="struts.ui.theme" value="simple"/>
+		    <package name="default" extends="struts-default" namespace="/">
+				<action name="*_*" class="{1}Action" method="{2}">
+					<result name="list">/WEB-INF/views/{1}/list.jsp</result>
+					<result name="input">/WEB-INF/views/{1}/input.jsp</result>
+					<result name="success" type="redirectAction">{1}</result>
+				</action>
+		    </package>
+		</struts>
+
+
+2):action中：
+		2.1：LIST="list",定义成列表
+		2.2：INPUT:进入编辑界面返回INPUT;
+		2.3:SUCCESS:更新保存删除都返回SUCCESS(重定向到list列表中)

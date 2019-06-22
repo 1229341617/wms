@@ -1,0 +1,73 @@
+1.input只能匹配到input元素，而:input可以匹配到
+	1.1: input-type[button/checkbox/file/hidden/image/password/radio/reset/submit/text]
+	1.2: select/textarea
+	1.3: <button>Button</button>
+	例子：$(":input[name='qo.pageSize']")
+	
+
+2.限定翻页跳转的页码的范围：
+	$("input[name='qo.currentPage']")
+				.css("width","50px")
+				.prop("type","number")
+				.prop("min",1)
+				.prop("max",$(".totalPage").data("page"));
+
+
+3.each/map(function中的item都是this)-得到所有checked中的对象和值：
+	//class选择器和:checked过滤器
+	var ids = [];
+	$.each($(".acb:checked"), function(index, item){
+			ids[index] = $(item).data("eid");
+		});
+	
+	ids = $.map($(".acb:checked"), function(item){
+			return $(item).data("eid");
+		});
+	1):得到数组：map(函数参数：item->dom的this)
+	2):遍历数组：each(函数参数：index,item)
+	3):判断数组中是否存在某值：inArray($.inArray("1",数组)>= 0 )
+
+
+4.批量删除发送ajax请求：
+	//发送ajax请求
+	//此时发现数组参数会多一个【】，此时需要禁用  将表单元素数组或者对象序列化 功能：
+	//在公共页面中加上：jQuery.ajaxSettings.traditional = true; 禁用它
+	$.get($(".btn_batch_delete").data("url"), {ids:ids},function(){
+		window.location.reload();//批量删除后重新加载文档
+	});
+
+
+5.当一个jsp中引用了不需要的js代码，可通过：
+	if($("#editForm").size()>0){
+	
+	}
+	来判断是否执行；
+
+
+6.提交表单会触发submit事件，应用：	提交表单时的操作，如选中所有已经分配的权限；
+		$(function(){
+			$("#editForm").submit(function(){
+				$(".right option").prop("selected",true);
+			});
+		});
+	prop只会得到一个值，但可以设置所有值；
+	
+	
+7.登录时按下enter键提交(绑定在pwd输入框中，焦点在此处按enter才有效)：
+	$(function(){
+		$('#pwd').keypress(enterLogin).keydown(enterLogin);
+	});
+	function enterLogin(e){
+		var e = e || window.event;
+		if(e.keyCode == 13){
+			$("#submitForm").submit();
+		}
+	}
+
+
+8.$(this).index():得到当前多个li第几个的索引
+	方法返回指定元素相对于其他指定元素的 index 位置。
+
+
+9.js返回上一个页面：
+		parent.history.back();

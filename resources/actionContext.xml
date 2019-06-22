@@ -1,0 +1,61 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="employeeAction" class="com._520it.wms.web.action.EmployeeAction" scope="prototype">
+		<property name="employeeService" ref="employeeService"/>
+		<property name="departmentService" ref="departmentService"/>
+		<property name="roleService" ref="roleService"/>
+	</bean>
+
+	<bean id="departmentAction" class="com._520it.wms.web.action.DepartmentAction" scope="prototype">
+		<property name="departmentService" ref="departmentService"/>
+	</bean>
+
+	<bean id="permissionAction" class="com._520it.wms.web.action.PermissionAction" scope="prototype">
+		<property name="permissionService" ref="permissionService"/>
+	</bean>
+
+	<bean id="roleAction" class="com._520it.wms.web.action.RoleAction" scope="prototype">
+		<property name="roleService" ref="roleService"/>
+		<property name="permissionService" ref="permissionService"/>
+		<property name="systemMenuService" ref="systemMenuService"/>
+	</bean>
+
+	<bean id="loginAction" class="com._520it.wms.web.action.LoginAction" scope="prototype">
+		<property name="employeeService" ref="employeeService"/>
+	</bean>
+
+	<bean id="logoutAction" class="com._520it.wms.web.action.LogoutAction" scope="prototype">
+	</bean>
+
+	<bean id="systemMenuAction" class="com._520it.wms.web.action.SystemMenuAction" scope="prototype">
+		<property name="systemMenuService" ref="systemMenuService"/>
+	</bean>
+
+	<bean id="validateAction" class="com._520it.wms.web.action.ValidateAction" scope="prototype">
+	</bean>
+
+	<bean id="complePaperAction" class="com._520it.wms.web.action.ComplePaperAction" scope="prototype">
+		<property name="complePaperService" ref="complePaperService"/>
+		<property name="subjectService" ref="subjectService"/>
+		<property name="employeeService" ref="employeeService"/>
+		<property name="examService" ref="examService"/>
+	</bean>
+
+	<bean id="subjectAction" class="com._520it.wms.web.action.SubjectAction" scope="prototype">
+		<property name="subjectService" ref="subjectService"/>
+	</bean>
+
+	<bean id="cutPaperAction" class="com._520it.wms.web.action.CutPaperAction" scope="prototype">
+		<property name="cutPaperService" ref="cutPaperService"/>
+	</bean>
+	<bean id="distributionAction" class="com._520it.wms.web.action.DistributionAction" scope="prototype">
+		<property name="distributionService" ref="distributionService"/>
+		<property name="titleNumService" ref="titleNumService"/>
+		<property name="subjectService" ref="subjectService"/>
+		<property name="employeeService" ref="employeeService"/>
+	</bean>
+	<bean id="examAction" class="com._520it.wms.web.action.ExamAction" scope="prototype">
+		<property name="examService" ref="examService"/>
+		<property name="subjectService" ref="subjectService"/>
+	</bean>
+</beans>

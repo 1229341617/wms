@@ -1,0 +1,65 @@
+1.通过ServiceImpl实现ApplicationAware接口，注入ApplicationContext，
+     然后利用ctx.getBeanOfType(BaseAction.class)扫描BaseAction的所有子类；
+
+
+2.获取每一个Action类中的所有方法
+
+
+3.判断Action方法上是否存在RequiredPermission注解，如果存在，获取该注解对象；
+
+
+4.每次遇到RequiredPermission的方法，都创建出Permission对象，并设置
+  Permission对象中的name和expression"
+	name：	获取RequiredPermission注解的value属性值；
+	expression:得到当前的方法所在的类的权限定名+方法名称
+    【4.1:method.getDeclaringClass()：获得该方法声明的类的字节码对象】
+    【4.2:将map转化为value集合：Collection<BaseAction> actions = actionMap.values();】
+
+
+5.调用permissionDao.save(权限对象）；
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Override
+	public void reload() {
+		//0.将数据库中的权限表达式加载到pSet集合中
+		List<Permission> permissions = permissionDao.findAll();
+		Set<String> pSet = new HashSet<>();
+		for (Permission permission : permissions) {
+			pSet.add(permission.getExpression());
+		}
+		//1.扫描BaseAction并得到所有子类map
+		Map<String, BaseAction> actionMap = ctx.getBeansOfType(BaseAction.class);
+		Set<Entry<String, BaseAction>> entrySet = actionMap.entrySet();
+		for (Entry<String, BaseAction> entry : entrySet) {
+			Class<? extends BaseAction> actionClz = entry.getValue().getClass();
+			//2.获取每一个Action类中的所有方法
+			Method[] methods = actionClz.getDeclaredMethods();
+			for (int i = 0; i < methods.length; i++) {
+				//3.判断pSet(数据库中)集合中是否存在该权限表达式，若否，则保存
+				String expression = PermissionUtil.buidPermission(methods[i]);
+				if(!pSet.contains(expression)){
+					if (methods[i].isAnnotationPresent(RequiredPermission.class)) {
+						String value = methods[i].getAnnotation(RequiredPermission.class).value();
+						//4.每次遇到RequiredPermission的方法，都创建出Permission对象，并设置name和expression
+						Permission permission = new Permission();
+						permission.setName(value);
+						permission.setExpression(expression);
+						//5.调用permissionDao.save(权限对象）；
+						permissionDao.save(permission);
+					}
+				}
+			}
+		}
+	}

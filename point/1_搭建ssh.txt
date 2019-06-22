@@ -1,0 +1,313 @@
+(resources路径一般都可加classpath前缀)
+
+1.拷贝jar包
+	1.1：Spring的jar包：
+		1>:spring-framework-4.0.0.RELEASE/libs中拷贝：
+			context,beans,tx,aop,core,expression,test(7:spring)
+			jdbc,orm[HibernateTransaction],(2:spring-dao)
+			web(1:spring-struts2)
+		2>:spring-framework-3.0.5.RELEASE-dependencies中拷贝：
+			aopalliance,aspectj,(apach.common)logging-1.1.1(3:联盟和织入和日志)
+	1.2:Hibernate的jar包：
+		required+Hibernate.core+（dbcp/pool | druid）
+
+2.准备applicationContext.xml文件：
+	在spring-framework-4.0.0.RELEASE\docs\spring-framework-reference\pdf中就找到：
+	配置四个：context,aop,tx,p,并相应在xml中关联相应的schemal;
+	
+3.准备bean.hbm.xml文件：在每个表对象下新建*.hbm.xml文件：文件可在hibernate包下，查找*.hbm.xml寻找（有User.hbm.xml）
+
+4.配置applicationContext.xml文件(在spring中的pdf下的DataAccess/Object Relational Mapping (ORM) Data Access/Hibernate即可查到)：
+	4.1：准备db.properties文件，配置<context:property-placeholder location="classpath:db.properties"/>
+	4.2:配置dataSource(Hibernate默认是利用dbcp的连接池)
+		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+			<property name="driverClassName" value="${jdbc.driverClassName}"/>
+			<property name="url" value="${jdbc.url}"/>
+			<property name="username" value="${jdbc.username}"/>
+			<property name="password" value="${jdbc.password}"/>
+		</bean>
+	4.3:配置sessionFactory:dataSource,hibernate属性（方言，是否展示sql等）,mappingResource(*.hbm.xml文件);
+		<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+			<!-- 3.1:配置数据库连接属性 -->
+			<property name="dataSource" ref="dataSource"/>
+			<!-- 3.2:配置hibernate的基本属性 -->
+			<property name="hibernateProperties">
+				<value>
+					hibernate.show_sql=true
+					hibernate.hbm2ddl.auto=update
+					hibernate.dialect=org.hibernate.dialect.MySQLDialect
+				</value>
+			</property>
+			<!-- 3.3：配置数据库对象映射文件 -->
+			<property name="mappingLocations" value="classpath:cn/itcast/cd/ssh/model/Employee.hbm.xml"/>
+			<!-- <property name="mappingResources">
+				<list>
+					<value>cn/itcast/cd/ssh/model/Employee.hbm.xml</value>
+				</list>
+			</property> -->
+		</bean>
+
+5.配置dao映射：
+	<!-- dao实现类中继承了HibernateDaoSupport,而要使用它的hibernateTemplate,必须为其设置sessionFactory属性  -->
+	<bean id="baseDao" abstract="true">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	<bean id="employeeDao" class="cn.itcast.cd.ssh.dao.impl.EmployeeDaoImpl" parent="baseDao"/>
+
+6.配置daoContext.xml和serviceContext.xml，import到applicationContext.xml中：
+	<!-- 引入dao配置文件 -->
+	<import resource="classpath:daoContext.xml"/>
+	<!-- 引入service配置文件 -->
+	<import resource="classpath:serviceContext.xml"/>
+7.配置事务：
+	<!-- 配置事务 -->
+	<bean id="txManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>	
+	
+	<!-- 配置环绕增强 -->
+	<tx:advice id="crudAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRES_NEW"/>
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="find*" read-only="true"/>
+			<tx:method name="query*" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 配置aop -->
+	<aop:config>
+		<aop:pointcut expression="execution(* cn.itcast.cd.ssh.service.*Service.*(..))" id="txPoint"/>
+		<aop:advisor advice-ref="crudAdvice" pointcut-ref="txPoint"/>
+	</aop:config>
+	
+8.整合Spring+Struts2:
+8.1):拷贝jar包,
+	空白项目中的全部（注意javaassist和hibernate中的重复）+
+				struts2-spring-plugin-2.3.15.3.jar+
+											servlet.jar;
+*********************************************************************************************************************************************
+	1>:拷贝Struts2中的空白项目中的所有jar包（javassist和loggings注意重复）
+	
+	2>:在空白项目中拷贝web中的前端过滤器
+	
+	3>:在web中设置contextLoaderListener,并配置全局参数，指引web从哪里寻找applicationContext.xml和dao/serviceContext.xml
+			<!-- 
+				 告诉web从哪里找applicationContext.xml
+				(监听器无初始化参数，只能采用全局初始化参数来告知web,此参数是ContextLoaderListener中的)
+			 -->
+			<context-param>
+				<param-name>contextConfigLocation</param-name>
+				<param-value>classpath:applicationContext.xml</param-value>
+			</context-param>
+		
+			<!-- 上下文加载监听器：确保系统启动就初始化Spring容器 -->
+			<listener>
+				<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+			</listener>
+			
+			
+			<filter>
+		        <filter-name>struts2</filter-name>
+		        <filter-class>org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter</filter-class>
+		    </filter>
+		
+		    <filter-mapping>
+		        <filter-name>struts2</filter-name>
+		        <url-pattern>/*</url-pattern>
+		    </filter-mapping>
+		    
+	4>.Spring和Struts2整合需要strtus2下lib中的 struts2-spring-plugin-2.3.15.3.jar,其中配置文件有：
+			-------*****************StrutsSpringObjectFactory：为struts2创建对象的对象*****************-------
+			<struts>
+			    <bean type="com.opensymphony.xwork2.ObjectFactory" name="spring" class="org.apache.struts2.spring.StrutsSpringObjectFactory" />
+			    
+			    <!--  Make the Spring object factory the automatic default -->
+			    <constant name="struts.objectFactory" value="spring" />
+			
+			    <constant name="struts.class.reloading.watchList" value="" />
+			    <constant name="struts.class.reloading.acceptClasses" value="" />
+			    <constant name="struts.class.reloading.reloadConfig" value="false" />
+			
+			    <package name="spring-default">
+			        <interceptors>
+			            <interceptor name="autowiring" class="com.opensymphony.xwork2.spring.interceptor.ActionAutowiringInterceptor"/>
+			        </interceptors>
+			    </package>    
+			</struts>
+			-------*****************StrutsSpringObjectFactory：为struts2创建对象的对象*****************-------
+	 5>:整合具体：
+	 	applicationContext.xml中：
+		 	<bean id="employeeAction" class="cn.itcast.cd.ssh.web.action.EmployeeAction"
+		 		scope="prototype">
+		 		<property name="service" ref="employeeService"/>
+		 	</bean>
+	 	struts.xml中:
+	 		<package name="ssh" extends="struts-default" namespace="/">
+	 			<action name="employee_*" class="employeeAction" method="{1}">
+	 		...
+	 6>:在views中打开session：
+	 	<!-- 在视图层打开session(部门的显示时，由于在service中打开伴随着关闭，在views中机会报错) -->
+		<filter>
+			<filter-name>OpenSessionInViewFilter</filter-name>
+			<filter-class>org.springframework.orm.hibernate4.support.OpenSessionInViewFilter</filter-class>
+		</filter>
+		
+		<filter-mapping>
+			<filter-name>OpenSessionInViewFilter</filter-name>
+			<url-pattern>/*</url-pattern>
+		</filter-mapping>
+	 	
+			
+				
+
+
+
+
+
+
+
+
+
+
+
+
+/***Spring3和Hibernate4的整合：http://blog.csdn.net/tonysong111073/article/details/14517227***/
+
+
+
+首先，spring与hibernate3整合时有三种方式：1、直接使用SessionFactory（该SessionFactory由spring管理并注入）的方式：
+           
+[java] view plain copy
+
+     @Resource  
+    public void setSessionFactory(SessionFactory sessionFactory) {  
+    this.sessionFactory = sessionFactory;  
+    }  
+    protected Session getsSession(){  
+    return this.sessionFactory.getCurrentSession();  
+    }  
+               
+
+
+            其次、利用HibernateTemplate类提供的模板方式：
+         
+[java] view plain copy
+
+     <bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">  
+          <constructor-arg name="sessionFactory" ref="sessionFactory"/>  
+    </bean>   
+               
+     @Resource(name="sessionFactory")  
+    public void setHibernateTemplate(SessionFactory sessionFactory) {  
+    this.hibernateTemplate =new HibernateTemplate(sessionFactory);  
+    }    
+
+
+
+     
+           再者：利用HibernateDaoSupport类。
+
+在Spring与hibernate4的整合中，已经取消了HibernateTemplate和HibernateDaoSupport这两个方法只能通过session来进行处理。
+和hibernate4整合没有提供专门的针对Annotation的类，直接在LocalSessionFactoryBean中已经集成
+    
+[java] view plain copy
+
+    <bean id="sessionFactory"  
+    class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">    
+
+
+        
+ 
+事务管理也要改成hibernate4的支持
+[java] view plain copy
+
+    <!-- 创建事务管理器-->  
+    <bean id="txManager"  
+    class="org.springframework.orm.hibernate4.HibernateTransactionManager">  
+
+
+如果通过Spring来管理相应的SessionFactory,不再使用factory.openSession()开启session，而应该是一facotry.getCurrentSession来打开Session，这个Session就会被Spring所管理，此时开发人员不用进行事务控制，也不用关闭Session，全部有Spring容器来完成
+只有配置了事务处理之后，Spring才能有效的管理事务
+[java] view plain copy
+
+    <!-- 配置Spring的事务处理 -->  
+    <!-- 创建事务管理器-->  
+    <bean id="txManager"  
+    class="org.springframework.orm.hibernate4.HibernateTransactionManager">  
+    <property name="sessionFactory" ref="sessionFactory" />  
+    </bean>  
+    <!-- 配置AOP，Spring是通过AOP来进行事务管理的 -->  
+    <aop:config>  
+    <!-- 设置pointCut表示哪些方法要加入事务处理 -->  
+    <aop:pointcut id="allMethods"  
+    expression="execution(* com.tc.spring.service.*.*(..))" />  
+    <!-- 通过advisor来确定具体要加入事务控制的方法 -->  
+    <aop:advisor advice-ref="txAdvice" pointcut-ref="allMethods" />  
+    </aop:config>  
+    <!-- 配置哪些方法要加入事务控制 -->  
+    <tx:advice id="txAdvice" transaction-manager="txManager">  
+    <tx:attributes>  
+    <!-- 让所有的方法都加入事务管理 -->  
+    <tx:method name="*" propagation="REQUIRED"/>  
+    </tx:attributes>  
+    </tx:advice>  
+          
+
+
+
+ 也可通过注解的方式实现事务管理:
+       
+       
+[java] view plain copy
+
+    <tx:annotation-driven transaction-manager="transactionManager" /> <span style="font-family: Arial, Helvetica, sans-serif; background-color: rgb(255, 255, 255);"> </span>  
+
+
+        在要进行事务管理的类和方法中分别添加如下注解：
+       
+ 
+[java] view plain copy
+
+    @Transactional  
+
+[java] view plain copy
+
+    public class BaseDao<T,PK extends Serializable> implements IBaseDao<T, PK>  
+      
+     @Override  
+    @Transactional(propagation=Propagation.REQUIRED,readOnly=true)  
+    public List<T> list(String sql, Object... args) {  
+    Query query=this.getSession().createQuery(sql);  
+    if(args!=null){  
+    for(int i=0;i<args.length;i++){  
+    query.setParameter(i, args[i]);  
+    }  
+    }  
+    return query.list();  
+    }  
+      
+    @Override  
+    @Transactional(propagation=Propagation.REQUIRED,readOnly=true)  
+    public T findById(PK id) {  
+    return (T)this.getSession().get(clazz, id);  
+    }  
+      
+    @Override  
+    @Transactional(propagation=Propagation.REQUIRED)  
+    public void save(T t) {  
+    this.getSession().save(t);  
+    }  
+
+
+  
+OpenSessionInViewer也要改成基于4的版本
+
+
+/***Spring3和Hibernate4的整合：http://blog.csdn.net/tonysong111073/article/details/14517227***/
+	
+	
+
+							
+							

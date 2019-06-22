@@ -1,0 +1,9 @@
+1.引入：jquery.fancybox.css和jquery.fancybox.pack.js；
+
+2.jsp中:
+	<a class="fancybox" data-fancybox-group="gallary" href="<s:property value="imagePath"/>"  title="<s:property value="name"/>">
+		<img src="<s:property value="smallImagePath"/>" class="list_img">
+	</a>
+
+3.调用facybox:
+	$(".fancybox").fancybox();

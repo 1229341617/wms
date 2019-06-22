@@ -1,0 +1,28 @@
+1.查看子菜单:
+	本质：高级查询，跳转action，传递高级查询参数到后台查询显示；
+	
+	
+2.添加菜单时，显示父菜单名称到编辑列表中：
+	在添加按钮中添加qo.parentId参数；
+
+
+3.将保存的菜单设置父菜单；（查看子菜单:action中传递qo.parentId->添加按钮设置此参数->input中设置隐藏域，方便设置父菜单）
+
+
+4.将参数传递到另一个action中，方便list中显示在当前添加的字菜单页面上：重定向（请求转发本身就会传递的）：
+	<action name="systemMenu_*" class="systemMenuAction" method="{1}">
+		<result name="success" type="redirectAction">
+			<param name="actionName">systemMenu</param>
+			<param name="qo.parentId">${qo.parentId}</param>
+		</result>
+	</action>
+
+
+5.角色关联菜单:显示所有子菜单在菜单列表中；
+
+
+6.菜单面板的切换：
+	1):移除所有li中的class="selected"样式和image图标；
+	2):根据面板选中当前li的索引，设置当前li的selected样式和image图标；
+	3):根据面板选中当前li的索引，设置二级菜单的图标；
+		

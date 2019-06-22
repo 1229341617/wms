@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+	"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+	"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com._520it.wms.domain">
+	<class name="Distribution" table="distribution" lazy="false">
+        <id name="id">
+            <generator class="native"/>
+        </id>
+        <property name="code"/>
+        <many-to-one name="subject" column="subject_id" class="Subject"/>
+        <many-to-one name="teacher" column="teacher_id" class="Employee"/>
+        <bag name="titlenums" table="distributions_titlenums">
+        	<key column="distribution_id"/>
+        	<many-to-many column="titlenum_id" class="TitleNum"/>
+        </bag>
+	</class>
+</hibernate-mapping>

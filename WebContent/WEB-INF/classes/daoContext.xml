@@ -1,0 +1,30 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="baseDao" abstract="true">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<bean id="employeeDao" class="com._520it.wms.dao.impl.EmployeeDaoImpl"
+		parent="baseDao" />
+	<bean id="departmentDao" class="com._520it.wms.dao.impl.DepartmentDaoImpl"
+		parent="baseDao" />
+	<bean id="permissionDao" class="com._520it.wms.dao.impl.PermissionDaoImpl"
+		parent="baseDao" />
+	<bean id="roleDao" class="com._520it.wms.dao.impl.RoleDaoImpl"
+		parent="baseDao" />
+	<bean id="systemMenuDao" class="com._520it.wms.dao.impl.SystemMenuDaoImpl"
+		parent="baseDao" />
+	<bean id="complePaperDao" class="com._520it.wms.dao.impl.ComplePaperDaoImpl"
+		parent="baseDao" />
+	<bean id="subjectDao" class="com._520it.wms.dao.impl.SubjectDaoImpl"
+		parent="baseDao" />
+	<bean id="cutPaperDao" class="com._520it.wms.dao.impl.CutPaperDaoImpl"
+		parent="baseDao" />
+	<bean id="titleNumDao" class="com._520it.wms.dao.impl.TitleNumDaoImpl"
+		parent="baseDao" />
+	<bean id="distributionDao" class="com._520it.wms.dao.impl.DistributionDaoImpl"
+		parent="baseDao" />
+	<bean id="examDao" class="com._520it.wms.dao.impl.ExamDaoImpl"
+		parent="baseDao" />
+</beans>

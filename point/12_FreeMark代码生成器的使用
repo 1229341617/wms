@@ -1,0 +1,29 @@
+1.FreeMark的hello程序：
+	1):hello.html:
+			<body>
+				我是${name},今年${age}岁.
+			</body>
+	2):java代码:
+			public static void main(String[] args) throws Exception {
+				//1.创建配置对象
+				Configuration config = new Configuration();
+				//2.设置模板加载目录
+				config.setDirectoryForTemplateLoading(new File("templates"));
+				//3.得到模板对象(指定模板文件)
+				Template template = config.getTemplate("hello.html");
+				//4.合并模板和数据
+				Map<String, Object> dataModel = new HashMap<>();
+				dataModel.put("name", "Will");
+				dataModel.put("age", 17);
+				Writer out = new FileWriter(new File("test.html"));
+				
+				template.process(dataModel, out);
+			}
+	3):输出结果：
+			<body>
+				我是Will,今年17岁.
+			</body>	
+
+
+2.
+		

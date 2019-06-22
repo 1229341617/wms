@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+	"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+	"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com._520it.wms.domain">
+	<class name="ComplePaper" table="complePaper" lazy="false">
+        <id name="id">
+            <generator class="native"/>
+        </id>
+        <property name="totalscore"/>
+        <property name="objscore"/>
+        <property name="cutnum"/>
+        <property name="reviewednum"/>
+        <property name="imagePath"/>
+        <property name="iscutted"/>
+        <property name="isreviewd"/>
+        
+        <many-to-one name="student" column="student_id" class="Employee"/>
+        <many-to-one name="subject" column="subject_id" class="Subject"/>
+        <many-to-one name="teacher" column="teacher_id" class="Employee"/>
+        <many-to-one name="exam" column="exam_id" class="Exam"/>
+	</class>
+</hibernate-mapping>

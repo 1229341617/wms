@@ -1,0 +1,229 @@
+1.struts2标签中链接+参数跳转：
+	1.1-s-url:
+		<s:iterator value="#pageResult.result">
+			<td><s:property value="id"/></td>
+			<s:url var="empEdit" namespace="/" action="employee_input">
+				<s:param name="employee.id" value="id"/>
+			</s:url>
+			<a href="<s:property value="empEdit"/>">编辑</a>
+		</s:iterator>
+	1.2-s-a:
+		<s:a namespace="/" action="employee_delete">
+			<s:param name="employee.id" value="id"/>
+			删除
+		</s:a>
+
+
+2.全局异常的处理：
+	2.1:抛给框架处理：
+		1.1:编写error.jsp提示页面
+		1.2:在struts.xml中添加：
+			<global-results>
+	    		<result name="error">/WEB-INF/views/common/error.jsp</result>
+	    	</global-results>
+	    	<global-exception-mappings>
+	    		<exception-mapping result="error" exception="java.lang.Exception"/>
+	    	</global-exception-mappings>
+	
+	2.2:自行处理，利用struts2框架显示在页面中：
+		2.1:在错误可能发生的地方try/catch包裹并添加addActionError(e.getMessage());
+		2.2:在页面中添加标签：<s:actionerror/>
+		
+	2.3:将显示error和message信息抽离到一个jsp中，利用对话框方式弹出：
+		1):struts2中的ActionSupport中有两个方法：hasActionErrors()和hasActionMessages()来判断是否是错误信息！
+		2):在common_msg.jsp页面中：
+			2.1):因为action在栈顶，所以可以直接调用其中的方法；
+			2.2):因为先执行jsp->servlet,再执行前端页面，所以s标签早已转换成字符串了；
+			2.3):actionErrors和actionMessages都是数组，取第一位，actionError标签含太多标签；
+				<script type="text/javascript">
+					var msg;
+					<s:if test="hasActionErrors()">
+						msg = '<s:property value="actionErrors[0]"/>';
+						alert(msg);
+					</s:if>
+					<s:if test="hasActionMessages()">
+						msg = '<s:property value="actionMessages[0]"/>';
+						alert(msg);
+					</s:if>
+				</script>	
+
+		
+	2.4:需求：input页面出现异常，阻止跳转到list列表页面，跳转到本页面，并在界面显示异常信息；
+		@InputConfig(methodName="input" || resultName="input"):
+		保存或者更新时，出现异常不应该直接跳到error.jsp页面,而应该经过employee_input.action方法，再进入input页面，显示错误到input.jsp中：
+		1):在paramsPrepareParamsStack拦截器中，有workflow拦截器-对应->com.opensymphony.xwork2.interceptor.DefaultWorkflowInterceptor
+		   DefaultWorkflowInterceptor中，有：
+		   ****************************************************************************************************
+				@Override
+			    protected String doIntercept(ActionInvocation invocation) throws Exception {
+	                resultName = processInputConfig(action, invocation.getProxy().getMethod(), resultName);
+			        return invocation.invoke();
+			    }
+		   ****************************************************************************************************
+			中：processInputConfig(action, invocation.getProxy().getMethod(), resultName)有：
+		   ****************************************************************************************************
+				String resultName = currentResultName;
+		        InputConfig annotation = action.getClass().getMethod(method, EMPTY_CLASS_ARRAY).getAnnotation(InputConfig.class);
+		        if (annotation != null) {
+		            if (!annotation.methodName().equals("")) {
+		                Method m = action.getClass().getMethod(annotation.methodName());
+		                resultName = (String) m.invoke(action);
+		            } else {
+		                resultName = annotation.resultName();
+		            }
+		        }
+		        return resultName;//@InputConfig(methodName="input" || resultName="input"):
+		   ****************************************************************************************************
+		   
+		 2):store拦截器（【默认情况下，跳转到input视图】在两个action之间共享数据，login不是两个action间就不行，拦截器是在action之前做操作，但在jsp前不做操作）
+		 	1>:由上可知@InputConfig标签是处理流程用的，当一个页面需要跳转到execute方法时，为了不执行此方法，贴此标签，执行其他方法；
+		 	2>:先执行workflow拦截器，再执行saveOrUpdate方法手动添加才有actionError->只有有了actionError，workflow才会执行execute中的InputConfig标签；
+		 	3>:但是此处SUCCESS跳转到execute是重定向，新的request,actionError传递不过去，需要store拦截器配置在workflow拦截器（paramsPrepareParamsStack拦截器中）之前，才有效；
+		 	
+		 
+		 3):@InputConfig标签以methodName为主，否则以resultName为主；
+			 	1):拦截器配置：
+			 		<!-- 拦截器 -->
+			    	<interceptors>
+			    		<interceptor-stack name="myStack">
+			    			<interceptor-ref name="store">
+			    				<param name="operationMode">AUTOMATIC</param>
+			    			</interceptor-ref>
+			    			<interceptor-ref name="paramsPrepareParamsStack"/>
+			    		</interceptor-stack>
+			    	</interceptors>
+			    	<default-interceptor-ref name="myStack"/>
+			    	
+			 	2):代码：
+				 	@RequiredPermission("员工保存或更新")
+					public String saveOrUpdate() throws Exception {
+						try {
+							int a = 1/0;
+							
+							if(employee.getId() != null){
+								employeeService.update(employee);
+							}else{
+								employeeService.save(employee);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+							System.out.println(hasErrors());
+							addActionError(e.getMessage());
+							System.out.println(hasErrors());
+						}
+						return SUCCESS;
+					}
+				
+					@RequiredPermission("员工列表")
+					@InputConfig(methodName="input")
+					public String execute() throws Exception {
+						System.out.println(hasErrors());
+						
+						putContext("depts", departmentService.findAll());
+						putContext("pageResult", employeeService.advanceQuery(qo));
+						return LIST;
+					}
+		   
+3.修改ParametersInterceptor的源代码，devMode开发者模式下，问题：repassword在Action中无set方法的错；
+	1):在相同包com.opensymphony.xwork2.interceptor下创建	ParametersInterceptor类，复制源码类；
+	2):注释setParameters方法中的 if (devMode)中的内容【306行】；
+
+4.prepare拦截器：
+	prepare拦截器-解决更新时密码等未填写字段数据的丢失（方案：利用传递的参数，查到数据库中的数据，再利用二次不为null参数覆盖数据库中查到的完整数据,实现数据更新）
+	1):在struts-default.xml中找到拦截器：
+		<interceptor name="prepare" class="com.opensymphony.xwork2.interceptor.PrepareInterceptor"/>
+			通过：PrepareInterceptor()->doIntercept()->invokePrefixMethod()->getPrefixedMethod()->capitalizeMethodName()
+		可知，若要在某一action方法上实现该功能，只需要【prepare方法名（首字母大写）】
+	2):实现步骤：
+		2.1):action实现Preparable接口,并提供prepare方法的空实现
+		2.2):为特定的action方法提供preare方法，名称为   prepare+方法名（首字母大写）
+		2.3):在struts.xml替换默认的拦截器，换成paramsPrepareParamsStack拦截器，提供二次拦截参数功能，默认的defaultStack不具备此功能；
+		2.4):方法实现：
+					public void prepareSaveOrUpdate() throws Exception{
+						if(employee.getId() != null){
+							employee = employeeService.get(employee.getId());
+						}
+					}
+
+5.Expression parameters.id is undefined on line 122, column 42 in template/simple/select.ftl.
+	原因：<s:select/>标签一定要有name属性设置,左右权限选择框，左边的name可以为空：<s:select name="" />
+	
+6.struts2表单中，权限选中后提交，只有在提交前选中全部才会存到role对象中：
+		/**在表单提交前，把所有已经分配的权限设置为选中状态，如此才能提交保存权限成功*/
+		$(function(){
+			$(".submit").click(function(){
+				$.each($(".right option"),function(index,item){
+					item.selected = true;
+				});
+			});
+		});
+	提交前选中所有权限；
+
+7.web.xml前段过滤器没有经过struts2过滤，导致struts2的标签无法解析：
+	错误：	This is usually caused by using Struts tags without the associated filter.
+	解决：在StrutsPrepareAndExecuteFilter后面多加上如下配置：
+			<filter-mapping>
+				<filter-name>StrutsPrepareAndExecuteFilter</filter-name>
+				<url-pattern>*.jsp</url-pattern>
+			</filter-mapping>
+
+8.连同ation请求带过去的参数值，只要不是重定向，在跳转后的页面中也可以用到；
+
+9.问题：以下双参数方式会出XXXaction?systemMenu.id=32&amp;qo.parentId=23错：
+		<s:url var="empEdit" namespace="/" action="systemMenu_input">
+			<s:param name="systemMenu.id" value="id"/>
+			<s:param name="qo.parentId" value="qo.parentId"/>
+		</s:url>
+		<a href="<s:property value="empEdit"/>">编辑</a>
+      方案：
+		<s:a namespace="/" action="systemMenu_input">
+		     编辑<s:param name="systemMenu.id" value="id"/>
+			<s:param name="qo.parentId" value="qo.parentId"/>
+		</s:a>
+
+10.上传图片时得图片文件和名称：
+	1):jsp中：
+		<s:file name="pic" cssClass="ui_file"/>
+	2):action中:
+		private File pic;//得到存在tomcat中的临时文件名称
+			E:\java\OpenSource\tomcat\apache-tomcat-7.0.78-windows-x64\apache-tomcat-7.0.78\work\Catalina\localhost\_\upload_2aa701cd_68ef_4b11_90ad_5fb95244bd96_00000012.tmp
+		private String picFileName;//文件的原始名称：360儿童手表 巴迪龙儿童手表5 W563 360儿童卫士 智能彩屏电话手表 静谧蓝.jpg
+
+
+11.重定向到一个页面并携带参数：
+	应用场景1)：修改SystemMenu子菜单，提交成功后，跳转到只显示父菜单同一级的列表下；
+	应用场景2)：修改a员工家属信息，提交成功后，只显示a员工家属的列表中；
+	以上场景都表示，在保存成功后，重定向到一个列表中，该列表只有该用户相关联的的对象集合，需要传递一个参数；
+		解决：
+			在struts.xml中，result节点中添加参数：
+				<result name="goHomeInfoList" type="redirectAction">
+					<param name="actionName">HomeInfoAction_homeInfoList</param>
+					<param name="userId">${homeInfo.user_id}【key-value中的key】</param>
+				</result>
+		解析：
+			<param name="userId">${homeInfo.user_id}</param>中，为什么要写homeInfo.user_id:
+				1.因为参数的来源是jsp中的:
+					<input type="hidden" name="homeInfo.user_id" value="<s:property value='#userId'/>" />
+				2.非jsp表单时，如删除，参数需要换种形式传递，如：
+					window.location.href = "HomeInfoAction_deleteHomeInfo.action?homeInfoId=" + id +
+					"&homeInfo.user_id="（对应struts.xml中的参数来源）+ userId;
+				
+12.struts.xml设计：
+		<!-- action配置 -->
+    	<action name="login" class="loginAction">
+    		<result name="success">/WEB-INF/views/main.jsp</result>
+    	</action>
+		<action name="systemMenu_*" class="systemMenuAction" method="{1}">
+			<result name="list">/WEB-INF/views/systemMenu/list.jsp</result>
+			<result name="input">/WEB-INF/views/systemMenu/input.jsp</result>
+			<result name="success" type="redirectAction">
+				<param name="actionName">systemMenu</param>
+				<param name="qo.parentId">${qo.parentId}</param>
+			</result>
+		</action>
+		<action name="*_*" class="{1}Action" method="{2}">
+			<result name="list">/WEB-INF/views/{1}/list.jsp</result>//jsp页面文件夹和action名称相同
+			<result name="input">/WEB-INF/views/{1}/input.jsp</result>
+			<result name="success" type="redirectAction">{1}</result>
+			<result name="{2}">/WEB-INF/views/{1}/{2}.jsp</result>//方法名称和返回字符串相同
+		</action>

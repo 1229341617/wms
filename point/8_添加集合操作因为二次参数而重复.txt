@@ -1,0 +1,12 @@
+1.在pre方法中清空第一次的参数：
+
+public void prepareSaveOrUpdate() throws Exception{
+		if(role.getId() != null){
+			role = roleService.get(role.getId());
+		}
+		
+		
+		role.getPermissions().clear();
+
+
+	}

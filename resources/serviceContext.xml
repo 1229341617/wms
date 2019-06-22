@@ -1,0 +1,42 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="employeeService" class="com._520it.wms.service.impl.EmployeeServiceImpl">
+		<property name="employeeDao" ref="employeeDao" />
+	</bean>
+	<bean id="departmentService" class="com._520it.wms.service.impl.DepartmentServiceImpl">
+		<property name="departmentDao" ref="departmentDao" />
+	</bean>
+	<bean id="permissionService" class="com._520it.wms.service.impl.PermissionServiceImpl">
+		<property name="permissionDao" ref="permissionDao" />
+	</bean>
+	<bean id="roleService" class="com._520it.wms.service.impl.RoleServiceImpl">
+		<property name="roleDao" ref="roleDao" />
+	</bean>
+	<bean id="systemMenuService" class="com._520it.wms.service.impl.SystemMenuServiceImpl">
+		<property name="systemMenuDao" ref="systemMenuDao" />
+	</bean>
+	<bean id="complePaperService" class="com._520it.wms.service.impl.ComplePaperServiceImpl">
+		<property name="complePaperDao" ref="complePaperDao" />
+		<property name="cutPaperDao" ref="cutPaperDao" />
+		<property name="titleNumDao" ref="titleNumDao" />
+	</bean>
+	<bean id="subjectService" class="com._520it.wms.service.impl.SubjectServiceImpl">
+		<property name="subjectDao" ref="subjectDao" />
+	</bean>
+	<bean id="cutPaperService" class="com._520it.wms.service.impl.CutPaperServiceImpl">
+		<property name="cutPaperDao" ref="cutPaperDao" />
+		<property name="complePaperDao" ref="complePaperDao" />
+		<property name="distributionDao" ref="distributionDao" />
+	</bean>
+	<bean id="titleNumService" class="com._520it.wms.service.impl.TitleNumServiceImpl">
+		<property name="titleNumDao" ref="titleNumDao" />
+	</bean>
+	<bean id="distributionService" class="com._520it.wms.service.impl.DistributionServiceImpl">
+		<property name="distributionDao" ref="distributionDao" />
+	</bean>
+	<bean id="examService" class="com._520it.wms.service.impl.ExamServiceImpl">
+		<property name="examDao" ref="examDao" />
+	</bean>
+</beans>
